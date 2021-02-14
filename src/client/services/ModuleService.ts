@@ -408,10 +408,6 @@ export class ArgumentGroup implements ArgumentGroupInfo {
                             try {
                                 const parsedTuple = lookahead.check(parts.slice(parti).filter(_ => !!_), message);
                                 if (parsedTuple) {
-                                    if (argi >= args.length / 2) {
-                                        return [ parsed_args, parti ];
-                                    }
-
                                     argi++;
                                     if (!lookahead.options.repeat)
                                         argi++;
@@ -427,7 +423,7 @@ export class ArgumentGroup implements ArgumentGroupInfo {
                                     }
 
                                     if (lookahead.options.repeat) {
-                                        const curRepeat = curRepeats.get(lookahead);
+                                        const curRepeat = curRepeats.get(lookahead) || 1;
 
                                         curRepeats.set(lookahead, curRepeat + 1);
                                         if (curRepeat >= (lookahead.options as RepeatingArgumentGroupOptions).repeatMax) {
@@ -449,7 +445,7 @@ export class ArgumentGroup implements ArgumentGroupInfo {
 
                             if (parsed) {
                                 if (argi >= args.length / 2) {
-                                    return [ parsed_args, parti ];
+                                    return [ parsed_args, parti - 2 ];
                                 }
 
                                 argi++;
@@ -494,13 +490,18 @@ export class ArgumentGroup implements ArgumentGroupInfo {
                             }
 
                             if (group.options.repeat) {
-                                const curRepeat = curRepeats.get(group);
+                                const curRepeat = curRepeats.get(group) || 1;
 
                                 curRepeats.set(group, curRepeat + 1);
                                 if (curRepeat >= (group.options as RepeatingArgumentGroupOptions).repeatMax) {
                                     argi++;
                                     continue;
+                                } else if (curRepeat <= (group.options as RepeatingArgumentGroupOptions).repeatMin) {
+                                    argi++;
+                                    continue;
                                 }
+                            } else {
+                                argi++;
                             }
                         } else {
                             if (group.options.optional || this.options.partial) {
@@ -538,6 +539,16 @@ export class ArgumentGroup implements ArgumentGroupInfo {
                         }
                     }
                 }
+            }
+        }
+
+        if (this.options.repeat) { // Not enough arguments supplied
+            if (argi < args.length / 2 - 1) {
+                return null;
+            }
+        } else {
+            if (argi < args.length - 1) {
+                return null;
             }
         }
 
@@ -824,7 +835,7 @@ export default new ModuleService;
     const mod = await a.load("fun");
     const cmd = mod.commands[0];
     const msg = new (discord.Message as any) as discord.Message;
-    msg.content = "c.wyr hey there or hi there or hello there or hola there or i hate you or poo now!!";
+    msg.content = "c.wyr a b or b c or d e";
 
     await cmd.check(msg);
 })();
